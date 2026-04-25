@@ -55,6 +55,10 @@ Age
 
 ![Histogram](images/histogram.png)
 
+### Bar Chart
+
+![Bar Chart](images/bar.png)
+
 ### Heatmap
 
 ![Heatmap](images/heatmap.png)
