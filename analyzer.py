@@ -51,7 +51,7 @@ def generate_histograms(df):
 
 def _save_bar_chart(counts, column):
     fig, ax = plt.subplots(figsize=(6, 4))
-    bars = ax.bar(counts.index.astype(str), counts.values, color="steelblue", edgecolor="white")
+    bars = ax.bar(counts.index.astype(str), counts.values, color="coral", edgecolor="white", width=0.6)
 
     for bar, value in zip(bars, counts.values):
         ax.text(
