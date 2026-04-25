@@ -3,8 +3,13 @@ import os
 import shutil
 
 import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
 import seaborn as sns
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import accuracy_score
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import LabelEncoder
 
 
 def _is_id_column(series):
@@ -69,7 +74,7 @@ def _save_bar_chart(counts, column):
 
 def generate_bar_charts(df):
     # カテゴリ列
-    for column in df.select_dtypes(include="str").columns:
+    for column in [col for col in df.columns if not pd.api.types.is_numeric_dtype(df[col])]:
         if df[column].nunique() <= 20:
             _save_bar_chart(df[column].value_counts(), column)
 
@@ -98,6 +103,92 @@ def generate_heatmap(df):
     fig.tight_layout()
     fig.savefig("output/correlation_heatmap.png")
     plt.close(fig)
+
+
+def _save_feature_importance(importances, target_column):
+    fig, ax = plt.subplots(figsize=(8, 5))
+
+    reversed_vals = importances.values[::-1]
+    reversed_idx = importances.index[::-1]
+    colors = ["steelblue"] * len(reversed_vals)
+    colors[-1] = "tomato"
+
+    ax.barh(reversed_idx, reversed_vals, color=colors, edgecolor="white")
+    ax.set_title(f"Feature Importance: {target_column}")
+    ax.set_xlabel("Importance")
+    ax.grid(axis="x", alpha=0.4)
+
+    fig.tight_layout()
+    fig.savefig(f"output/{target_column}_feature_importance.png")
+    plt.close(fig)
+
+
+def run_prediction(df, target_column):
+    print(f"\n=== ML Prediction: {target_column} ===")
+
+    if target_column not in df.columns:
+        print(f"Error: '{target_column}' 列が見つかりません。")
+        return
+
+    y_raw = df[target_column].copy()
+    X = df.drop(columns=[target_column]).copy()
+    X = X[[col for col in X.columns if not _is_id_column(X[col])]]
+
+    if X.shape[1] == 0:
+        print("Error: 特徴量として使える列がありません（全列がID列です）。")
+        return
+
+    if y_raw.dtype == object or y_raw.dtype.name == "category":
+        le = LabelEncoder()
+        y = le.fit_transform(y_raw.fillna("__missing__"))
+        class_names = le.classes_
+    else:
+        y_filled = y_raw.fillna(y_raw.median())
+        le = LabelEncoder()
+        y = le.fit_transform(y_filled.astype(str))
+        class_names = le.classes_
+
+    numeric_cols = X.select_dtypes(include="number").columns.tolist()
+    cat_cols = [col for col in X.columns if not pd.api.types.is_numeric_dtype(X[col])]
+
+    for col in numeric_cols:
+        X[col] = X[col].fillna(X[col].median())
+
+    for col in cat_cols:
+        mode = X[col].mode()
+        X[col] = X[col].fillna(mode[0] if not mode.empty else "__missing__")
+
+    X = pd.get_dummies(X, columns=cat_cols)
+
+    try:
+        X_train, X_test, y_train, y_test = train_test_split(
+            X, y, test_size=0.2, random_state=42, stratify=y
+        )
+    except ValueError:
+        X_train, X_test, y_train, y_test = train_test_split(
+            X, y, test_size=0.2, random_state=42
+        )
+
+    model = RandomForestClassifier(n_estimators=100, random_state=42)
+    model.fit(X_train, y_train)
+
+    y_pred = model.predict(X_test)
+    accuracy = accuracy_score(y_test, y_pred)
+
+    print(f"\n正答率 (Accuracy): {accuracy:.1%}")
+    print(f"学習データ: {len(X_train)}件 / テストデータ: {len(X_test)}件")
+    print(f"クラス: {', '.join(str(c) for c in class_names)}")
+
+    importances = pd.Series(model.feature_importances_, index=X.columns)
+    top_features = importances.nlargest(10)
+
+    print(f"\n特徴量の重要度 (Top {len(top_features)}):")
+    for feat, imp in top_features.items():
+        bar = "█" * int(imp * 40)
+        print(f"  {feat:<35} {imp:.3f}  {bar}")
+
+    _save_feature_importance(top_features, target_column)
+    print(f"\nFeature importance chart saved to output/{target_column}_feature_importance.png")
 
 
 def generate_comment(df, column):
@@ -131,8 +222,7 @@ def generate_comment(df, column):
     return comments
 
 
-def analyze_csv(file_path):
-    # CSV読み込み
+def analyze_csv(file_path, predict_column=None):
     df = pd.read_csv(file_path)
 
     print("\n=== Basic Statistics ===")
@@ -167,6 +257,9 @@ def analyze_csv(file_path):
     generate_heatmap(df)
     print("Charts saved to output/")
 
+    if predict_column:
+        run_prediction(df, predict_column)
+
 
 def main():
     parser = argparse.ArgumentParser(
@@ -177,10 +270,15 @@ def main():
         "csv_file",
         help="Path to CSV file"
     )
+    parser.add_argument(
+        "--predict",
+        metavar="TARGET_COLUMN",
+        help="Target column for ML prediction (e.g. --predict Survived)"
+    )
 
     args = parser.parse_args()
 
-    analyze_csv(args.csv_file)
+    analyze_csv(args.csv_file, predict_column=args.predict)
 
 
 if __name__ == "__main__":

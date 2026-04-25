@@ -57,7 +57,7 @@ Age
 
 ### Bar Chart
 
-![Bar Chart](images/bar.png)
+![Bar Chart](images/bar_chart.png)
 
 ### Heatmap
 
