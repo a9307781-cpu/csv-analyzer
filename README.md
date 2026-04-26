@@ -53,10 +53,11 @@
 6. [Output Examples](#output-examples)
 7. [Directory Structure](#directory-structure)
 8. [Roadmap](#roadmap)
-9. [Troubleshooting](#troubleshooting)
-10. [Contributing](#contributing)
-11. [License](#license)
-12. [Author](#author)
+9. [Future Vision](#future-vision)
+10. [Troubleshooting](#troubleshooting)
+11. [Contributing](#contributing)
+12. [License](#license)
+13. [Author](#author)
 
 ---
 
@@ -246,6 +247,18 @@ csv-analyzer/
 
 ---
 
+## Future Vision
+
+The ultimate goal of this tool is to **eliminate the repetitive setup work that every data analyst faces**, regardless of the dataset.
+
+Right now, the tool handles the most common patterns: numeric distributions, categorical breakdowns, correlations, and classification. But real-world data is messier — missing values need smarter imputation, time-series columns need trend analysis, and non-technical users need results they can share without opening a terminal.
+
+The next direction is toward **an automated reporting pipeline**: run one command, get back a self-contained HTML report with interactive charts and a plain-language summary — ready to share with anyone on your team.
+
+<p align="right">(<a href="#top">back to top</a>)</p>
+
+---
+
 ## Troubleshooting
 
 ### `ModuleNotFoundError: No module named 'pandas'`
@@ -285,7 +298,7 @@ Contributions are welcome!
 
 ## License
 
-[MIT](https://opensource.org/licenses/MIT)
+[MIT](LICENSE)
 
 <p align="right">(<a href="#top">back to top</a>)</p>
 
